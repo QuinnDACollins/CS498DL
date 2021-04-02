@@ -85,22 +85,29 @@ class YoloLoss(nn.Module):
         Note: Over here initially x, y are the center of the box and w,h are width and height.
         We perform this transformation to convert the correct coordinates into bounding box coordinates.
         """
-        b_num = len(box_pred_list)
-        best_iou = np.asarray((b_num, 1))
-        best_boxes
-        #prep new predictions array
-        preds = np.zeros((box_pred_list.shape[0], box_pred_list.shape[1] + 1))
-        for i in range(b_num):
-            preds[i] = self.xywh2xyxy(box_pred_list[i])
-            
-        ### CODE ###
-        for i in range(b_num):
-            ious = np.asarray(b_num)
-            for j in range(b_num):
-                ious[j] = compute_iou(preds, box_target)
-            best_ious[i, argmax(ious)]
+        """
+        Just to make sure I got the point: box_pred_list, which is [(tensor) size (-1, 5) …], is B tensors of size (NSS,5) and    box_target is a tensor of size (NSS,4) We return a tensor (NSS, 1) of the best score between the two bounding boxes for that (N,S,S), image at [S][S], and a tensor sized (NSS,5) of the boxes they relate to from box_pred_list
+        
+        """
+        size = len(pred_box_list) #flattened
+        best_ious = np.asarray((size, 1))
+        best_boxes  = np.asarray((size, 5))
+        #There are [B] bounding box predictions per box in our grid. Find the best iou per box in our grid given the predictions.
+        for i in range(size):
+            ious = [0, 0]
+            gridb = self.xywh2xyxy(box_target[i, :])
+            b1 = self.xywh2xyxy(box_pred_list[0][i][:4])
+            b2 = self.xywh2xyxy(box_pred_list[1][i][:4])
+            preds = [box_pred_list[0, i, :], box_pred_list[1, i, :]]
+            ious[0] = self.compute_iou(b1, gridb)
+            ious[1] = self.compute_iou(b2, gridb)
+            best = argmax(ious)
+            best_ious[i, :] = best
+            best_boxes[i, :] = preds[best]
         return best_ious, best_boxes
-
+                
+            
+    
     def get_class_prediction_loss(self, classes_pred, classes_target, has_object_map):
         """
         Parameters:
@@ -187,6 +194,8 @@ class YoloLoss(nn.Module):
 
         # split the pred tensor from an entity to separate tensors:
         # -- pred_boxes_list: a list containing all bbox prediction (list) [(tensor) size (N, S, S, 5)  for B pred_boxes]
+        pred_boxes_list = torch.split(pred_tensor, self.B, 4)
+            
         # -- pred_cls (containing all classification prediction)
 
         # compcute classification loss
