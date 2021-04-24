@@ -1,6 +1,6 @@
 import torch
 from torch.nn.functional import binary_cross_entropy_with_logits as bce_loss
-
+device = torch.device("cuda:0")
 def discriminator_loss(logits_real, logits_fake):
     """
     Computes the discriminator loss.
@@ -20,8 +20,9 @@ def discriminator_loss(logits_real, logits_fake):
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    D_x = bce_loss(logits_real, torch.ones(logits_real.size()))
-    D_G_x = bce_loss(logits_fake, torch.zeros(logits_fake.size()))
+    
+    D_x = bce_loss(logits_real, torch.ones(logits_real.size()).to(device))
+    D_G_x = bce_loss(logits_fake, torch.zeros(logits_fake.size()).to(device))
     total = D_x + D_G_x
     total.mean()
     ##########       END      ##########
@@ -45,7 +46,7 @@ def generator_loss(logits_fake):
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    D_G_x = bce_loss(logits_fake, torch.zeros(logits_fake.size()))
+    D_G_x = bce_loss(logits_fake, torch.ones(logits_fake.size()).to(device))
     total = D_G_x.mean()
     ##########       END      ##########
     
@@ -69,12 +70,14 @@ def ls_discriminator_loss(scores_real, scores_fake):
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    loss1 = bce_loss(logits_real, 0)
-    loss2 = bce_loss(logits_fake, 1)
     
+    D_x = bce_loss(scores_real, torch.ones(scores_real.size()).to(device))
+    D_G_x = bce_loss(scores_fake, torch.zeros(scores_fake.size()).to(device))
+    total = D_x + D_G_x
+    total = 0.5 * total
+    total.mean()
     ##########       END      ##########
-    
-    return loss
+    return total
 
 def ls_generator_loss(scores_fake):
     """
@@ -92,8 +95,8 @@ def ls_generator_loss(scores_fake):
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    
-    
+    D_G_x = bce_loss(scores_fake, torch.ones(scores_fake.size()).to(device))
+    total = 0.5 * D_G_x.mean()
     ##########       END      ##########
     
-    return loss
+    return total

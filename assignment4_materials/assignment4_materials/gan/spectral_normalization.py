@@ -31,17 +31,19 @@ class SpectralNorm(nn.Module):
               3: Calculate w with the spectral norm.
               4: Use setattr to update w in the module.
         """
-        w = getattr(self.module, self.name)
         u = getattr(self.module, self.name + "_u")
         v = getattr(self.module, self.name + "_v")
+        w = getattr(self.module, self.name + "_bar")
+        h = w.data.shape[0]
         
-        v = l2normalize(w.T * u) 
-        u = l2normalize(w.T * v)
-        
-        wSN = w / (u.T * w * v)
-        w = w -(.001 * wSN)
-        setattr(self.module, self.name, w)
-    
+        v = l2normalize(torch.mv(torch.t(w.view(h,-1).data), u.data))
+
+        u = l2normalize(torch.mv(w.view(h,-1).data, v.data))
+
+        last = u.dot(w.view(h, -1).mv(v))
+        wsn = torch.div(w, last.expand_as(w))
+        self.module.weight = w
+
 
     def _make_params(self):
         """
@@ -74,4 +76,3 @@ class SpectralNorm(nn.Module):
         """
         self._update_u_v()
         return self.module.forward(*args)
-
