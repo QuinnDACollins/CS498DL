@@ -17,16 +17,15 @@ def discriminator_loss(logits_real, logits_fake):
     - loss: PyTorch Tensor containing (scalar) the loss for the discriminator.
     """
     
-    loss = None
-    
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    
-    
+    D_x = bce_loss(logits_real, torch.ones(logits_real.size()))
+    D_G_x = bce_loss(logits_fake, torch.zeros(logits_fake.size()))
+    total = D_x + D_G_x
+    total.mean()
     ##########       END      ##########
-    
-    return loss
+    return total
 
 def generator_loss(logits_fake):
     """
@@ -43,16 +42,14 @@ def generator_loss(logits_fake):
     - loss: PyTorch Tensor containing the (scalar) loss for the generator.
     """
     
-    loss = None
-    
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    
-    
+    D_G_x = bce_loss(logits_fake, torch.zeros(logits_fake.size()))
+    total = D_G_x.mean()
     ##########       END      ##########
     
-    return loss
+    return total
 
 
 def ls_discriminator_loss(scores_real, scores_fake):
@@ -72,7 +69,8 @@ def ls_discriminator_loss(scores_real, scores_fake):
     ####################################
     #          YOUR CODE HERE          #
     ####################################
-    
+    loss1 = bce_loss(logits_real, 0)
+    loss2 = bce_loss(logits_fake, 1)
     
     ##########       END      ##########
     

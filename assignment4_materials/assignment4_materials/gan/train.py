@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-
+import torch
 from gan.utils import sample_noise, show_images, deprocess_img, preprocess_img
 
 def train(D, G, D_solver, G_solver, discriminator_loss, generator_loss, show_every=250, 
@@ -58,8 +58,39 @@ def train(D, G, D_solver, G_solver, discriminator_loss, generator_loss, show_eve
             ####################################
             #          YOUR CODE HERE          #
             ####################################
-            
-            
+            for i in range(num_epochs):
+                #DISCRIMINATOR STEP
+                #zero the gradients
+                D_solver.zero_grad()
+                
+                #pass to generator to get the fake imgs and detatch for loss
+                fake_images = G.forward(sample_noise(batch_size, noise_size))
+                fake_images.detach() #sus
+                fake_images = torch.reshape(fake_images, (batch_size, input_channels, img_size, img_size))
+                
+                real_dOut = D.forward(real_images)
+                fake_dOut = D.forward(fake_images)
+                d_error = discriminator_loss(real_dOut, fake_dOut)
+                d_error.backward()
+                D_solver.step()
+                
+                #GENERATOR STEP
+                #zero the gradients
+                G_solver.zero_grad()
+                
+                #generate fake batch of images
+                fake_images = G.forward(sample_noise(batch_size, noise_size))
+                fake_images.detach()
+                fake_images = torch.reshape(fake_images, (batch_size, input_channels, img_size, img_size))
+                
+                #discriminator output for fake images
+                fake_dOutG = D.forward(fake_images)
+                
+                #compute generator loss
+                g_error = generator_loss(fake_dOutG)
+                g_error.backward()
+                G_solver.step()
+                
             ##########       END      ##########
             
             # Logging and output visualization

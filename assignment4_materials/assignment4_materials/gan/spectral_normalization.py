@@ -31,8 +31,17 @@ class SpectralNorm(nn.Module):
               3: Calculate w with the spectral norm.
               4: Use setattr to update w in the module.
         """
+        w = getattr(self.module, self.name)
+        u = getattr(self.module, self.name + "_u")
+        v = getattr(self.module, self.name + "_v")
         
-
+        v = l2normalize(w.T * u) 
+        u = l2normalize(w.T * v)
+        
+        wSN = w / (u.T * w * v)
+        w = w -(.001 * wSN)
+        setattr(self.module, self.name, w)
+    
 
     def _make_params(self):
         """
