@@ -12,17 +12,26 @@ class Discriminator(torch.nn.Module):
         ####################################
         #          YOUR CODE HERE          #
         ####################################
-        self.conv1 = SpectralNorm(torch.nn.ConvTranspose2d(3, 128, 4, 2, padding=1))
-        self.bn1 = torch.nn.BatchNorm2d(128, 3)
-        self.conv2 = SpectralNorm(torch.nn.ConvTranspose2d(128, 256, 4, 2, padding=1))
-        self.bn2 = torch.nn.BatchNorm2d(256, 128)
-        self.conv3 = SpectralNorm(torch.nn.ConvTranspose2d(256, 512, 4, 2, padding=1))
-        self.bn3 = torch.nn.BatchNorm2d(512, 256)
-        self.conv4 = SpectralNorm(torch.nn.ConvTranspose2d(512, 1024, 4, 2, padding=1))
-        self.bn4 = torch.nn.BatchNorm2d(1024, 512)
-        self.conv5 = SpectralNorm(torch.nn.ConvTranspose2d(1024, 1, 4, 1, padding=1))
+        self.slope = 0.2
+
+        self.net = torch.nn.Sequential(
+          SpectralNorm(torch.nn.Conv2d(input_channels, 128, 4, 2, padding=1)),
+          torch.nn.BatchNorm2d(128),
+          torch.nn.LeakyReLU(self.slope),
+          SpectralNorm(torch.nn.Conv2d(128, 256, 4, 2, padding=1)),
+          torch.nn.BatchNorm2d(256),
+          torch.nn.LeakyReLU(self.slope),
+          SpectralNorm(torch.nn.Conv2d(256, 512, 4, 2, padding=1)),
+          torch.nn.BatchNorm2d(512),
+          torch.nn.LeakyReLU(self.slope),
+          SpectralNorm(torch.nn.Conv2d(512, 1024, 4, 2, padding=1)),
+          torch.nn.BatchNorm2d(1024),
+          torch.nn.LeakyReLU(self.slope),
+          SpectralNorm(torch.nn.Conv2d(1024, 1, 4, 1, padding=1)),
+          torch.nn.LeakyReLU(self.slope)
+        )
         
-        self.out = torch.nn.Tanh()
+        
         
 
         ##########       END      ##########
@@ -33,27 +42,7 @@ class Discriminator(torch.nn.Module):
         #          YOUR CODE HERE          #
         ####################################
         #convlayer1
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = F.relu(x)
-        
-        #convlayer2
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = F.relu(x)
-        
-        #convlayer3
-        x = self.conv3(x)
-        x = self.bn3(x)
-        x = F.relu(x)
-        
-        #convlayer4 -> Tanh Last Activation
-        x = self.conv4(x)
-        x = self.bn4(x)
-        
-        
-        x = self.conv5(x)
-        x = self.out(x)
+        self.net(x)
         
         
         ##########       END      ##########
@@ -69,16 +58,15 @@ class Generator(torch.nn.Module):
         ####################################
         #          YOUR CODE HERE          #
         ####################################
-        self.conv0 = torch.nn.ConvTranspose2d(self.noise_dim, 1024, 4, 1)
-        self.bn0 = torch.nn.BatchNorm2d(1024, noise_dim)
+        self.conv0 = torch.nn.ConvTranspose2d(self.noise_dim, 1024, 4, 1, padding = 1)
+        self.bn0 = torch.nn.BatchNorm2d(1024)
         self.conv1 = torch.nn.ConvTranspose2d(1024, 512, 4, 2)
-        self.bn1 = torch.nn.BatchNorm2d(512, 1024)
+        self.bn1 = torch.nn.BatchNorm2d(512)
         self.conv2 = torch.nn.ConvTranspose2d(512, 256, 4, 2)
-        self.bn2 = torch.nn.BatchNorm2d(256, 512)
+        self.bn2 = torch.nn.BatchNorm2d(256)
         self.conv3 = torch.nn.ConvTranspose2d(256, 128, 4, 2)
-        self.bn3 = torch.nn.BatchNorm2d(128, 256)
+        self.bn3 = torch.nn.BatchNorm2d(128)
         self.conv4 = torch.nn.ConvTranspose2d(128, 3, 4, 2)
-        self.bn4 = torch.nn.BatchNorm2d(3, 128)
         self.out = torch.nn.Tanh()
         
         ##########       END      ##########
@@ -87,6 +75,7 @@ class Generator(torch.nn.Module):
         ####################################
         #          YOUR CODE HERE          #
         ####################################
+        orig_shape = x.shape
         x = x.view(-1, self.noise_dim, 1, 1)
         x = self.conv0(x)
         x = self.bn0(x)
@@ -108,8 +97,8 @@ class Generator(torch.nn.Module):
         
         #convlayer4 -> Tanh Last Activation
         x = self.conv4(x)
-        x = self.bn4(x)
         x = self.out(x)
+
         ##########       END      ##########
         return x
     

@@ -42,7 +42,7 @@ class SpectralNorm(nn.Module):
 
         last = u.dot(w.view(h, -1).mv(v))
         wsn = torch.div(w, last.expand_as(w))
-        self.module.weight = w
+        setattr(self.module, self.name, Parameter(wsn.data))
 
 
     def _make_params(self):
